@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     run_livekit_integration: bool = Field(default=False, alias="RUN_LIVEKIT_INTEGRATION")
 
-    openai_realtime_model: str = Field(default="gpt-4o-realtime-preview", alias="OPENAI_REALTIME_MODEL")
+    openai_realtime_model: str = Field(default="gpt-realtime", alias="OPENAI_REALTIME_MODEL")
     openai_realtime_voice: str = Field(default="marin", alias="OPENAI_REALTIME_VOICE")
 
     @field_validator("phone_number_business_map", mode="before")
