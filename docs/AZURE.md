@@ -71,7 +71,8 @@ Recommended long term: `lk agent console` (Python `console` subcommand is deprec
 |---------|--------|
 | `Direct OpenAI is disabled` | Remove `OPENAI_API_KEY` from `.env` / shell |
 | `AZURE_OPENAI_DEPLOYMENT ... not found` | Deployment name in portal; Realtime model deployed |
-| WebSocket closed immediately | Key/RBAC, region, API version mismatch; try empty `AZURE_OPENAI_API_VERSION` or set preview version per Azure docs |
+| WebSocket **404** on `/openai/v1/realtime?model=...` | Set `AZURE_OPENAI_API_VERSION=2024-10-01-preview` in `.env` (uses `/openai/realtime?deployment=...`). Confirm `AZURE_OPENAI_DEPLOYMENT` matches portal exactly (e.g. `Dbmaak-gpt-realtime`). |
+| WebSocket closed immediately (other) | Key/RBAC, region, Realtime SKU; try another preview version from Azure docs or `LK_OPENAI_DEBUG=1` |
 | `managed_identity` errors locally | Use `api_key` locally; MI only where `DefaultAzureCredential` works |
 
 Debug plugin traffic: `LK_OPENAI_DEBUG=1 python3 agent/main.py console`

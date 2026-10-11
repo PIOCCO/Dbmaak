@@ -27,9 +27,9 @@ class Settings(BaseSettings):
     azure_openai_api_key: str = Field(default="", alias="AZURE_OPENAI_API_KEY")
     azure_openai_deployment: str = Field(default="", alias="AZURE_OPENAI_DEPLOYMENT")
     azure_openai_api_version: str = Field(
-        default="",
+        default="2024-10-01-preview",
         alias="AZURE_OPENAI_API_VERSION",
-        description="Optional; omit for newer /openai/v1/realtime Azure API.",
+        description="Azure Realtime API version; empty uses /openai/v1/realtime (many resources 404 without a preview version).",
     )
     azure_openai_auth_mode: AzureOpenAIAuthMode = Field(
         default="api_key",
