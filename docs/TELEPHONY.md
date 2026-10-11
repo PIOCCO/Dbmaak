@@ -11,7 +11,7 @@ This document matches the **current LiveKit Telephony docs** (Twilio Voice + inb
 | LiveKit Cloud project | SIP endpoint, trunks, dispatch, agent worker |
 | Twilio account + E.164 number | Caller-facing number |
 | `lk` CLI | Create inbound trunk and dispatch rule |
-| Worker env | `LIVEKIT_*`, `OPENAI_API_KEY`, `LIVEKIT_AGENT_NAME=voice-receptionist` |
+| Worker env | `LIVEKIT_*`, `AZURE_OPENAI_*`, `LIVEKIT_AGENT_NAME=voice-receptionist` (see `docs/AZURE.md`) |
 
 ## Step 1 — Twilio: TwiML Bin → LiveKit SIP
 

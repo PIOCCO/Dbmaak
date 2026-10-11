@@ -29,19 +29,25 @@ def validate_common(settings: Settings) -> None:
             )
 
 
-def validate_for_console(settings: Settings) -> None:
-    validate_common(settings)
-    if not settings.openai_api_key.strip():
-        raise ConfigurationError(
-            "Missing OPENAI_API_KEY for console mode. Add it to .env (see .env.example)."
-        )
-    from config.openai_preflight import OpenAIPreflightError, preflight_enabled, preflight_openai_realtime
+def _validate_azure_voice(settings: Settings) -> None:
+    from config.azure_preflight import AzurePreflightError, preflight_enabled, preflight_azure_realtime
+    from config.azure_validation import AzureConfigError, validate_azure_openai_config
+
+    try:
+        validate_azure_openai_config(settings)
+    except AzureConfigError as exc:
+        raise ConfigurationError(str(exc)) from exc
 
     if preflight_enabled():
         try:
-            preflight_openai_realtime(settings)
-        except OpenAIPreflightError as exc:
+            preflight_azure_realtime(settings)
+        except AzurePreflightError as exc:
             raise ConfigurationError(str(exc)) from exc
+
+
+def validate_for_console(settings: Settings) -> None:
+    validate_common(settings)
+    _validate_azure_voice(settings)
 
 
 def validate_for_worker(settings: Settings) -> None:
@@ -53,14 +59,13 @@ def validate_for_worker(settings: Settings) -> None:
         missing.append("LIVEKIT_API_KEY")
     if not settings.livekit_api_secret.strip():
         missing.append("LIVEKIT_API_SECRET")
-    if not settings.openai_api_key.strip():
-        missing.append("OPENAI_API_KEY")
     if missing:
         raise ConfigurationError(
             "Missing required environment variables for voice worker: "
             + ", ".join(missing)
             + ". See .env.example."
         )
+    _validate_azure_voice(settings)
 
 
 def validate_database_url(settings: Settings) -> None:

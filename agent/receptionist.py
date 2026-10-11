@@ -15,7 +15,7 @@ from observability.metrics import get_metrics
 from persistence.db import get_session_factory, init_db
 from persistence.repositories import CallSessionRepository
 from providers.booking.mock import MockBookingProvider
-from providers.voice.openai_realtime import OpenAIRealtimeVoiceFactory
+from providers.voice.factory import build_voice_factory
 from security.guards import CallToolGuard, IdempotencyStore
 from security.tenant import TenantContext
 from tools.actions import ReceptionistActions
@@ -133,7 +133,7 @@ async def start_receptionist_session(ctx: JobContext) -> None:
             metadata={"routing": routing.inbound.dispatch_metadata},
         )
 
-    voice_factory = OpenAIRealtimeVoiceFactory(settings)
+    voice_factory = build_voice_factory(settings)
     tools = build_livekit_tools(ToolServices(actions=session_ctx.actions))
     instructions = build_system_instructions(session_ctx.profile)
 

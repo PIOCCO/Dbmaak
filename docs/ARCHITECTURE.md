@@ -43,7 +43,7 @@ LLM/caller input never selects tenant.
 | Interface | Mock | Production path |
 |-----------|------|-----------------|
 | `BookingProvider` | `MockBookingProvider` | Future live adapter (`BookingProviderKind.LIVE`) |
-| Voice | `OpenAIRealtimeVoiceFactory` | OpenAI Realtime via LiveKit plugin |
+| Voice | `AzureRealtimeVoiceFactory` | Azure OpenAI Realtime via LiveKit `RealtimeModel.with_azure` |
 | Telephony routing | `LiveKitSipRoutingAdapter` | LiveKit SIP attributes |
 | Handoff | `agent/handoff.py` | SIP transfer when configured |
 

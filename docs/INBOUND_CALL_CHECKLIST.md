@@ -31,7 +31,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 Copy-Item .env.example .env
-# Edit .env: LIVEKIT_*, OPENAI_API_KEY, PHONE_NUMBER_BUSINESS_MAP, DATABASE_URL
+# Edit .env: LIVEKIT_*, AZURE_OPENAI_*, PHONE_NUMBER_BUSINESS_MAP, DATABASE_URL
 
 alembic upgrade head
 python agent/main.py download-files
@@ -78,7 +78,7 @@ Expected startup:
 | Unmapped dialed number | `routing_failed` / worker shutdown; **no** wrong tenant |
 | Worker stopped | Call fails at carrier/LiveKit (no agent) |
 | Wrong `LIVEKIT_AGENT_NAME` | Room created but no agent joins |
-| Missing OpenAI key | Session may fail; log `session_failed`, call row `failed` |
+| Missing / invalid Azure OpenAI config | Startup `ConfigurationError` or log `session_failed`, call row `failed` |
 | Handoff without SIP / destination | Spoken handoff message; log `handoff_skipped` (not silent PSTN transfer) |
 | Duplicate booking tool call (same idempotency key) | Same mock booking id returned; no double row |
 

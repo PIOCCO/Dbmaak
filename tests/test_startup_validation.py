@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -22,13 +23,15 @@ def test_phone_map_unknown_business_rejected(tmp_path: Path) -> None:
         validate_common(settings)
 
 
-def test_console_requires_openai_key() -> None:
+@patch("config.azure_preflight.preflight_azure_realtime")
+def test_console_requires_azure_config(mock_preflight: object) -> None:
     workspace = Path(__file__).resolve().parents[1]
     settings = Settings(
         business_config_dir=workspace / "config/businesses",
-        openai_api_key="",
+        azure_openai_endpoint="",
+        azure_openai_deployment="",
     )
-    with pytest.raises(ConfigurationError, match="OPENAI_API_KEY"):
+    with pytest.raises(ConfigurationError, match="AZURE_OPENAI_ENDPOINT"):
         validate_for_console(settings)
 
 
@@ -39,7 +42,9 @@ def test_worker_requires_livekit_and_openai() -> None:
         livekit_url="",
         livekit_api_key="",
         livekit_api_secret="",
-        openai_api_key="",
+        azure_openai_endpoint="https://x.openai.azure.com",
+        azure_openai_deployment="d",
+        azure_openai_api_key="k",
     )
     with pytest.raises(ConfigurationError, match="LIVEKIT_URL"):
         validate_for_worker(settings)

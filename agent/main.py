@@ -13,10 +13,17 @@ from config.settings import get_settings
 
 
 def _sync_env_from_settings() -> None:
-    """Ensure worker subprocesses see keys from .env even if only pydantic loaded them."""
+    """Expose Azure settings to worker subprocesses; strip legacy OpenAI env vars."""
+    os.environ.pop("OPENAI_API_KEY", None)
+    os.environ.pop("OPENAI_BASE_URL", None)
+
     settings = get_settings()
-    if settings.openai_api_key.strip():
-        os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key.strip())
+    if settings.azure_openai_endpoint.strip():
+        os.environ.setdefault("AZURE_OPENAI_ENDPOINT", settings.azure_openai_endpoint.strip())
+    if settings.azure_openai_api_key.strip():
+        os.environ.setdefault("AZURE_OPENAI_API_KEY", settings.azure_openai_api_key.strip())
+    if settings.azure_openai_api_version.strip():
+        os.environ.setdefault("AZURE_OPENAI_API_VERSION", settings.azure_openai_api_version.strip())
 
 
 from agent.receptionist import start_receptionist_session

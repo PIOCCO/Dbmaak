@@ -1,6 +1,8 @@
 # AI Voice Receptionist Engine
 
-Modular, production-oriented Python engine for multi-tenant AI phone receptionists. It orchestrates real-time voice conversations with **LiveKit Agents**, **OpenAI Realtime**, and **Twilio/LiveKit SIP** telephony, while keeping business rules, knowledge, tools, and tenant isolation on the server.
+Modular, production-oriented Python engine for multi-tenant AI phone receptionists. It orchestrates real-time voice conversations with **LiveKit Agents**, **Azure OpenAI Realtime** (speech-to-speech), and **Twilio/LiveKit SIP** telephony, while keeping business rules, knowledge, tools, and tenant isolation on the server.
+
+Azure setup: [`docs/AZURE.md`](docs/AZURE.md).
 
 This repository is the **core voice engine only** (no frontend, dashboard, or billing).
 
@@ -50,7 +52,7 @@ The LLM and caller **cannot** select the tenant.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env   # LIVEKIT_*, OPENAI_API_KEY
+cp .env.example .env   # LIVEKIT_*, AZURE_OPENAI_*
 python -c "from persistence.db import init_db; init_db()"
 python agent/main.py download-files
 python agent/main.py dev
@@ -146,8 +148,9 @@ Use this after configuring Twilio + LiveKit ( **not** automated in CI):
 | Wrong business | `PHONE_NUMBER_BUSINESS_MAP` E.164, `sip.trunkPhoneNumber` in LiveKit room |
 | `routing_failed` | Unmapped number; add map or `biz-<id>-` room prefix dispatch |
 | Handoff fails | Elastic SIP/trunk transfer enabled; `HUMAN_HANDOFF_DESTINATION`; SIP call (not console) |
-| `OpenAI Realtime API connection closed unexpectedly` | Run from repo root so `.env` loads; set `OPENAI_API_KEY` + billing; use `OPENAI_REALTIME_MODEL=gpt-realtime`; console now preflights the key (set `OPENAI_SKIP_PREFLIGHT=1` to skip); debug with `LK_OPENAI_DEBUG=1` |
-| OpenAI errors (other) | `OPENAI_API_KEY`, `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_VOICE` |
+| Realtime WebSocket closed unexpectedly | [`docs/AZURE.md`](docs/AZURE.md): deployment name, region/SKU, `AZURE_OPENAI_API_VERSION`; preflight (`AZURE_SKIP_PREFLIGHT=1` to skip); `LK_OPENAI_DEBUG=1` |
+| `Direct OpenAI is disabled` | Remove `OPENAI_API_KEY`; use `AZURE_OPENAI_*` only |
+| Azure auth errors | `AZURE_OPENAI_AUTH_MODE`, key or managed identity RBAC |
 
 More detail: [`docs/TELEPHONY.md`](docs/TELEPHONY.md).
 
@@ -192,7 +195,7 @@ docker compose up --build
 | Component | Status |
 |-----------|--------|
 | Booking backend | `MockBookingProvider` + local DB |
-| Voice / STT | OpenAI Realtime via LiveKit plugin (real API, not mocked in production) |
+| Voice | Azure OpenAI Realtime via LiveKit `RealtimeModel.with_azure` |
 | PSTN / Twilio | **You** configure trunks; not exercised in CI |
 | RAG | Keyword retrieval only |
 
@@ -205,7 +208,7 @@ Replace mock booking by implementing `providers/booking/base.py` and wiring it i
 | Credential / resource | Used for |
 |-----------------------|----------|
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Worker + rooms |
-| `OPENAI_API_KEY` | Realtime voice |
+| `AZURE_OPENAI_*` | Realtime voice (see `docs/AZURE.md`) |
 | Twilio number + TwiML Bin | Inbound PSTN |
 | LiveKit inbound SIP trunk + dispatch rule | Call → room → agent |
 | `PHONE_NUMBER_BUSINESS_MAP` (or per-number dispatch) | Tenant selection |
