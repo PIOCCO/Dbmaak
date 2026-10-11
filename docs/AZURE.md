@@ -71,7 +71,9 @@ Recommended long term: `lk agent console` (Python `console` subcommand is deprec
 |---------|--------|
 | `Direct OpenAI is disabled` | Remove `OPENAI_API_KEY` from `.env` / shell |
 | `AZURE_OPENAI_DEPLOYMENT ... not found` | Deployment name in portal; Realtime model deployed |
-| WebSocket **404** on `/openai/v1/realtime?model=...` | Set `AZURE_OPENAI_API_VERSION=2024-10-01-preview` in `.env` (uses `/openai/realtime?deployment=...`). Confirm `AZURE_OPENAI_DEPLOYMENT` matches portal exactly (e.g. `Dbmaak-gpt-realtime`). |
+| WebSocket **404** on both GA and preview URLs | Run `python3 scripts/check_azure_openai.py` from repo root. Usually **deployment name** or **endpoint** does not match Foundry → **Models + endpoints** (same Azure resource). Do not mix GA (`AZURE_OPENAI_API_VERSION` empty) with preview query params. |
+| WebSocket **404** on `/openai/v1/realtime?model=...` only | Foundry **GA** Realtime: keep `AZURE_OPENAI_API_VERSION` empty; set `AZURE_OPENAI_DEPLOYMENT` to the exact deployment id (e.g. `gpt-realtime`). |
+| WebSocket **404** on preview `/openai/realtime?deployment=...` | Try `AZURE_OPENAI_API_VERSION=2025-04-01-preview` (not 2024-10-01) or migrate deployment to GA `gpt-realtime` in Foundry. |
 | WebSocket closed immediately (other) | Key/RBAC, region, Realtime SKU; try another preview version from Azure docs or `LK_OPENAI_DEBUG=1` |
 | `managed_identity` errors locally | Use `api_key` locally; MI only where `DefaultAzureCredential` works |
 

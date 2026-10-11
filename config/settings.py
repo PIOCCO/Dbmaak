@@ -27,9 +27,10 @@ class Settings(BaseSettings):
     azure_openai_api_key: str = Field(default="", alias="AZURE_OPENAI_API_KEY")
     azure_openai_deployment: str = Field(default="", alias="AZURE_OPENAI_DEPLOYMENT")
     azure_openai_api_version: str = Field(
-        default="2024-10-01-preview",
+        default="",
         alias="AZURE_OPENAI_API_VERSION",
-        description="Azure Realtime API version; empty uses /openai/v1/realtime (many resources 404 without a preview version).",
+        description="Empty = GA WebSocket /openai/v1/realtime?model=<deployment>. "
+        "Set e.g. 2025-04-01-preview for legacy /openai/realtime?deployment=.",
     )
     azure_openai_auth_mode: AzureOpenAIAuthMode = Field(
         default="api_key",
