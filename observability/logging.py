@@ -11,9 +11,14 @@ from config.settings import get_settings
 _call_context: dict[str, str] = {}
 
 
-def configure_logging() -> None:
+def configure_logging(*, console_mode: bool = False) -> None:
     settings = get_settings()
-    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    level_name = settings.log_level.upper()
+    level = getattr(logging, level_name, logging.INFO)
+    # LiveKit legacy console uses Rich Live on stdout; keep app logs off stdout in console.
+    log_stream = sys.stderr if console_mode else sys.stdout
+    if console_mode and level_name == "INFO":
+        level = logging.WARNING
 
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
@@ -29,9 +34,12 @@ def configure_logging() -> None:
     structlog.configure(
         processors=processors,
         wrapper_class=structlog.make_filtering_bound_logger(level),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stdout),
+        logger_factory=structlog.PrintLoggerFactory(file=log_stream),
     )
-    logging.basicConfig(level=level)
+    logging.basicConfig(level=level, stream=log_stream)
+    if console_mode:
+        for logger_name in ("livekit", "livekit.agents", "asyncio", "aiohttp"):
+            logging.getLogger(logger_name).setLevel(max(level, logging.WARNING))
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:

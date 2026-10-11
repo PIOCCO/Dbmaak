@@ -58,7 +58,8 @@ def _validate_startup(argv: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    configure_logging()
+    _console = len(sys.argv) > 1 and sys.argv[1] == "console"
+    configure_logging(console_mode=_console)
     _sync_env_from_settings()
     try:
         _validate_startup(sys.argv)
