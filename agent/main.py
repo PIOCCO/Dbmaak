@@ -9,8 +9,17 @@ from livekit.agents import AgentServer, JobContext, cli
 # LiveKit worker reads LIVEKIT_* from os.environ; load .env from repo root first.
 load_dotenv()
 
-from agent.receptionist import start_receptionist_session
 from config.settings import get_settings
+
+
+def _sync_env_from_settings() -> None:
+    """Ensure worker subprocesses see keys from .env even if only pydantic loaded them."""
+    settings = get_settings()
+    if settings.openai_api_key.strip():
+        os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key.strip())
+
+
+from agent.receptionist import start_receptionist_session
 from config.startup import (
     ConfigurationError,
     validate_database_url,
@@ -43,6 +52,7 @@ def _validate_startup(argv: list[str]) -> None:
 
 if __name__ == "__main__":
     configure_logging()
+    _sync_env_from_settings()
     try:
         _validate_startup(sys.argv)
     except ConfigurationError as exc:

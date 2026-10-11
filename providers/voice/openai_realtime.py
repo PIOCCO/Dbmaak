@@ -12,7 +12,9 @@ class OpenAIRealtimeVoiceFactory:
         self._settings = settings
 
     def create_realtime_model(self) -> openai.realtime.RealtimeModel:
+        api_key = self._settings.openai_api_key.strip() or None
         return openai.realtime.RealtimeModel(
             model=self._settings.openai_realtime_model,
             voice=self._settings.openai_realtime_voice,
+            api_key=api_key,
         )

@@ -146,7 +146,8 @@ Use this after configuring Twilio + LiveKit ( **not** automated in CI):
 | Wrong business | `PHONE_NUMBER_BUSINESS_MAP` E.164, `sip.trunkPhoneNumber` in LiveKit room |
 | `routing_failed` | Unmapped number; add map or `biz-<id>-` room prefix dispatch |
 | Handoff fails | Elastic SIP/trunk transfer enabled; `HUMAN_HANDOFF_DESTINATION`; SIP call (not console) |
-| OpenAI errors | `OPENAI_API_KEY`, realtime model env |
+| `OpenAI Realtime API connection closed unexpectedly` | Run from repo root so `.env` loads; set `OPENAI_API_KEY` + billing; use `OPENAI_REALTIME_MODEL=gpt-realtime`; console now preflights the key (set `OPENAI_SKIP_PREFLIGHT=1` to skip); debug with `LK_OPENAI_DEBUG=1` |
+| OpenAI errors (other) | `OPENAI_API_KEY`, `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_VOICE` |
 
 More detail: [`docs/TELEPHONY.md`](docs/TELEPHONY.md).
 

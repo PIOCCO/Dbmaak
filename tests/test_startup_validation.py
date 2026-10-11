@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from config.settings import Settings
-from config.startup import ConfigurationError, validate_common, validate_for_worker
+from config.startup import ConfigurationError, validate_common, validate_for_console, validate_for_worker
 
 
 def test_phone_map_unknown_business_rejected(tmp_path: Path) -> None:
@@ -20,6 +20,16 @@ def test_phone_map_unknown_business_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises(ConfigurationError, match="unknown business"):
         validate_common(settings)
+
+
+def test_console_requires_openai_key() -> None:
+    workspace = Path(__file__).resolve().parents[1]
+    settings = Settings(
+        business_config_dir=workspace / "config/businesses",
+        openai_api_key="",
+    )
+    with pytest.raises(ConfigurationError, match="OPENAI_API_KEY"):
+        validate_for_console(settings)
 
 
 def test_worker_requires_livekit_and_openai() -> None:

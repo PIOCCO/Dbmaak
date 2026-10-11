@@ -31,6 +31,17 @@ def validate_common(settings: Settings) -> None:
 
 def validate_for_console(settings: Settings) -> None:
     validate_common(settings)
+    if not settings.openai_api_key.strip():
+        raise ConfigurationError(
+            "Missing OPENAI_API_KEY for console mode. Add it to .env (see .env.example)."
+        )
+    from config.openai_preflight import OpenAIPreflightError, preflight_enabled, preflight_openai_realtime
+
+    if preflight_enabled():
+        try:
+            preflight_openai_realtime(settings)
+        except OpenAIPreflightError as exc:
+            raise ConfigurationError(str(exc)) from exc
 
 
 def validate_for_worker(settings: Settings) -> None:
