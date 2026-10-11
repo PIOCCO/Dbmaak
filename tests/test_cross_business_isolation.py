@@ -7,6 +7,7 @@ from persistence.db import get_engine, init_db
 from persistence.repositories import BookingRepository
 from providers.booking.mock import MockBookingProvider
 from security.guards import CallToolGuard, IdempotencyStore
+from security.tenant import TenantContext
 from tools.actions import ReceptionistActions
 from tools.schemas import CreateBookingRequest
 
@@ -35,17 +36,21 @@ def test_bookings_isolated_by_business_id(tmp_path, monkeypatch) -> None:
         clinic_start += timedelta(days=1)
     clinic_start = clinic_start.replace(hour=10, minute=0, second=0, microsecond=0)
 
+    salon_tenant = TenantContext(business_id=salon.id, call_id="salon-call")
+    clinic_tenant = TenantContext(business_id=clinic.id, call_id="clinic-call")
     salon_actions = ReceptionistActions(
         profile=salon,
-        booking_provider=MockBookingProvider(salon),
+        booking_provider=MockBookingProvider(salon, salon_tenant),
         tool_guard=CallToolGuard(min_interval_seconds=0),
         idempotency=IdempotencyStore(),
+        tenant=salon_tenant,
     )
     clinic_actions = ReceptionistActions(
         profile=clinic,
-        booking_provider=MockBookingProvider(clinic),
+        booking_provider=MockBookingProvider(clinic, clinic_tenant),
         tool_guard=CallToolGuard(min_interval_seconds=0),
         idempotency=IdempotencyStore(),
+        tenant=clinic_tenant,
     )
 
     key = "shared-key-12345678"

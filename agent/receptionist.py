@@ -5,6 +5,7 @@ from livekit.agents import Agent, AgentSession, JobContext, RoomInputOptions, Ro
 
 from agent.context import SessionContext
 from agent.inbound import resolve_inbound_routing
+from agent.session_lifecycle import CallSessionFinalizer
 from agent.prompts import build_system_instructions
 from agent.routing import BusinessRoutingError
 from business.registry import BusinessRegistry
@@ -16,6 +17,7 @@ from persistence.repositories import CallSessionRepository
 from providers.booking.mock import MockBookingProvider
 from providers.voice.openai_realtime import OpenAIRealtimeVoiceFactory
 from security.guards import CallToolGuard, IdempotencyStore
+from security.tenant import TenantContext
 from tools.actions import ReceptionistActions
 from tools.registry import ToolServices, build_livekit_tools
 
@@ -46,12 +48,14 @@ def build_session_context(
     handoff_enabled: bool = True,
 ) -> SessionContext:
     profile = registry.get(business_id)
-    booking = MockBookingProvider(profile)
+    tenant = TenantContext(business_id=business_id, call_id=call_id)
+    booking = MockBookingProvider(profile, tenant)
     actions = ReceptionistActions(
         profile=profile,
         booking_provider=booking,
         tool_guard=CallToolGuard(),
         idempotency=IdempotencyStore(),
+        tenant=tenant,
     )
     return SessionContext(
         call_id=call_id,
@@ -152,17 +156,19 @@ async def start_receptionist_session(ctx: JobContext) -> None:
             )
             logger.info("caller_disconnected", business_id=routing.business_id)
 
+    def _persist_end(status: str) -> None:
+        with get_session_factory()() as db_session:
+            CallSessionRepository(db_session).end(routing.call_id, status=status)
+
+    finalizer = CallSessionFinalizer(
+        call_id=routing.call_id,
+        business_id=routing.business_id,
+        on_finalize=_persist_end,
+    )
+
     @session.on("close")
     def _on_close(_: object) -> None:
-        metrics.increment("session_ended", business_id=routing.business_id)
-        metrics.record_event(
-            "call_lifecycle",
-            phase="ended",
-            business_id=routing.business_id,
-            call_id=routing.call_id,
-        )
-        with get_session_factory()() as db_session:
-            CallSessionRepository(db_session).end(routing.call_id)
+        finalizer.finalize("completed")
 
     try:
         await session.start(
@@ -178,6 +184,5 @@ async def start_receptionist_session(ctx: JobContext) -> None:
             business_id=routing.business_id,
             error_type=type(exc).__name__,
         )
-        with get_session_factory()() as db_session:
-            CallSessionRepository(db_session).end(routing.call_id, status="failed")
+        finalizer.finalize("failed")
         raise

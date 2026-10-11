@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -36,6 +36,8 @@ class BookingRecord(Base):
     customer_name: Mapped[str] = mapped_column(String(120))
     customer_phone_redacted: Mapped[str] = mapped_column(String(32), default="")
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    duration_minutes: Mapped[int] = mapped_column(Integer, default=30, server_default="30")
     status: Mapped[str] = mapped_column(String(32), default="confirmed")
+    provider_kind: Mapped[str] = mapped_column(String(16), default="mock", server_default="mock")
     idempotency_key: Mapped[str] = mapped_column(String(128))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

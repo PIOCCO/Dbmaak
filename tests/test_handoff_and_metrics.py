@@ -10,6 +10,7 @@ from business.registry import BusinessRegistry
 from config.settings import Settings
 from observability.metrics import get_metrics
 from security.guards import CallToolGuard, IdempotencyStore
+from security.tenant import TenantContext
 from tools.actions import MOCK_BOOKING_NOTICE, ReceptionistActions
 from tools.schemas import HumanHandoffRequest
 
@@ -26,11 +27,13 @@ def test_handoff_disabled_blocks_tool() -> None:
     profile = profile.model_copy(
         update={"escalation": profile.escalation.model_copy(update={"handoff_enabled": False})}
     )
+    tenant = TenantContext(business_id=profile.id, call_id="call-handoff")
     actions = ReceptionistActions(
         profile=profile,
         booking_provider=MagicMock(),
         tool_guard=CallToolGuard(min_interval_seconds=0),
         idempotency=IdempotencyStore(),
+        tenant=tenant,
     )
     result = actions.request_human_handoff(HumanHandoffRequest(reason="Need a person"))
     assert result.ok is False

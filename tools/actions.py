@@ -8,6 +8,7 @@ from knowledge.store import BusinessKnowledgeStore, KnowledgeSection
 from providers.booking.base import BookingProvider
 from security.authorization import ToolAuthorizationError, ToolName, authorize_tool
 from security.guards import CallToolGuard, IdempotencyStore
+from security.tenant import TenantContext
 from security.validation import parse_iso_datetime
 from business.handoff_config import resolve_handoff_destination
 from config.settings import get_settings
@@ -41,12 +42,15 @@ class ReceptionistActions:
         booking_provider: BookingProvider,
         tool_guard: CallToolGuard,
         idempotency: IdempotencyStore,
+        tenant: TenantContext,
         allowed_tools: frozenset[ToolName] | None = None,
     ) -> None:
+        tenant.assert_business(profile.id)
         self._profile = profile
         self._booking = booking_provider
         self._guard = tool_guard
         self._idempotency = idempotency
+        self._tenant = tenant
         self._allowed = allowed_tools
         store = BusinessKnowledgeStore(profile)
         self._retriever = KnowledgeRetriever(store)
@@ -140,13 +144,8 @@ class ReceptionistActions:
                     "before setting confirm=true."
                 ),
             )
-        if not self._idempotency.claim(req.idempotency_key):
-            return ActionResult(
-                ok=False,
-                message="This booking request was already submitted for this call.",
-            )
-
         starts_at = parse_iso_datetime(req.starts_at, self._profile.timezone)
+        self._tenant.assert_business(self._profile.id)
         result = self._booking.create_booking(
             business_id=self._profile.id,
             service_id=req.service_id,
@@ -157,6 +156,19 @@ class ReceptionistActions:
         )
         if not result.success:
             return ActionResult(ok=False, message=result.message)
+        if not result.is_mock:
+            return ActionResult(
+                ok=True,
+                message=result.message,
+                data={
+                    "booking_id": result.booking_id,
+                    "starts_at": result.confirmed_starts_at.isoformat()
+                    if result.confirmed_starts_at
+                    else None,
+                    "mock": False,
+                    "provider_kind": result.provider_kind.value,
+                },
+            )
         return ActionResult(
             ok=True,
             message=f"{MOCK_BOOKING_NOTICE} {result.message}",
@@ -166,6 +178,7 @@ class ReceptionistActions:
                 if result.confirmed_starts_at
                 else None,
                 "mock": True,
+                "provider_kind": result.provider_kind.value,
             },
         )
 

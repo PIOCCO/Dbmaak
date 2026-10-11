@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 
+from providers.booking.types import BookingProviderKind
+
 
 @dataclass(frozen=True)
 class AvailabilitySlot:
@@ -18,9 +20,17 @@ class BookingResult:
     booking_id: str | None
     message: str
     confirmed_starts_at: datetime | None = None
+    provider_kind: BookingProviderKind = BookingProviderKind.MOCK
+
+    @property
+    def is_mock(self) -> bool:
+        return self.provider_kind == BookingProviderKind.MOCK
 
 
 class BookingProvider(ABC):
+    @property
+    @abstractmethod
+    def provider_kind(self) -> BookingProviderKind: ...
     @abstractmethod
     def check_availability(
         self,
