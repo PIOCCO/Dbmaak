@@ -89,6 +89,14 @@ def test_voice_factory_uses_azure_with_azure(mock_with_azure: MagicMock) -> None
     assert kwargs["voice"] == "marin"
 
 
+def test_preflight_skips_when_deployments_list_unavailable() -> None:
+    settings = _azure_settings()
+    with patch("config.azure_preflight._list_deployments", return_value=[]):
+        from config.azure_preflight import preflight_azure_realtime
+
+        preflight_azure_realtime(settings)
+
+
 def test_download_files_skips_azure_validation() -> None:
     from agent.main import _validate_startup
 

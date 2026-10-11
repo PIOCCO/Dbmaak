@@ -42,7 +42,9 @@ cp .env.example .env
 python3 agent/main.py console
 ```
 
-Preflight calls Azure `GET /openai/deployments` (read-only) to confirm the deployment name. Skip with `AZURE_SKIP_PREFLIGHT=1` if offline.
+Preflight tries Azure `GET /openai/deployments` when available. **Foundry** setups often return 404 on that URL (preflight then skips the list and only checks `.env` fields). Skip entirely with `AZURE_SKIP_PREFLIGHT=1` if needed.
+
+**Endpoint:** use **Keys and Endpoint** from the **Azure OpenAI** resource (`https://<name>.openai.azure.com`), not a Foundry project browser URL.
 
 Recommended long term: `lk agent console` (Python `console` subcommand is deprecated by LiveKit).
 

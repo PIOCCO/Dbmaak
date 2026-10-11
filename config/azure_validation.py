@@ -7,7 +7,13 @@ from urllib.parse import urlparse
 from config.azure_auth import AzureAuthError, resolve_azure_realtime_credentials
 from config.settings import Settings
 
-_ENDPOINT_RE = re.compile(r"^https://[a-z0-9-]+\.(openai|cognitiveservices)\.azure\.com/?$", re.I)
+_ENDPOINT_RE = re.compile(
+    r"^https://("
+    r"[a-z0-9-]+\.(openai|cognitiveservices)\.azure\.com"
+    r"|[a-z0-9-]+\.services\.ai\.azure\.com"
+    r")/?$",
+    re.I,
+)
 
 
 class AzureConfigError(RuntimeError):

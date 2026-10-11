@@ -39,6 +39,9 @@ def _list_deployments(settings: Settings, api_key: str | None, entra_token: str 
                 "Azure OpenAI credentials were rejected (HTTP "
                 f"{exc.code}). Check AZURE_OPENAI_API_KEY or managed identity RBAC."
             ) from exc
+        if exc.code == 404:
+            # Foundry / some resources do not expose the legacy deployments list URL.
+            return []
         body = exc.read().decode("utf-8", errors="replace")
         raise AzurePreflightError(
             f"Azure deployments API returned HTTP {exc.code}: {body[:400]}"
@@ -62,8 +65,11 @@ def preflight_azure_realtime(settings: Settings) -> None:
     api_key, entra_token = resolve_azure_realtime_credentials(settings)
     deployment = settings.azure_openai_deployment.strip()
     names = _list_deployments(settings, api_key, entra_token)
+    if not names:
+        # List unavailable (common with Foundry) — config-only check; Realtime connect is the real test.
+        return
     if deployment not in names:
-        hint = ", ".join(names[:8]) if names else "(none returned)"
+        hint = ", ".join(names[:8])
         raise AzurePreflightError(
             f"AZURE_OPENAI_DEPLOYMENT={deployment!r} was not found on this resource. "
             f"Deployments seen: {hint}"
