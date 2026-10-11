@@ -1,0 +1,31 @@
+id: demo_clinic
+display_name: Harbor Medical Clinic
+description: Primary care and same-day appointments.
+timezone: America/New_York
+agent_style:
+  language: en
+  tone: calm, precise, empathetic
+  disclose_ai: true
+contact:
+  phone: "+1-555-0200"
+inbound_phone_numbers:
+  - "+15550200"
+opening_hours:
+  - weekday: monday
+    ranges:
+      - open: "08:00"
+        close: "17:00"
+services:
+  - id: gp_visit
+    name: General practice visit
+    description: 30-minute appointment with a GP.
+    duration_minutes: 30
+    price_amount: 120
+    bookable: true
+faqs:
+  - question: Do you accept walk-ins?
+    answer: Same-day walk-ins are limited; booking is recommended.
+policies:
+  - Please arrive 10 minutes early for intake.
+escalation:
+  human_handoff_message: I'll transfer you to our clinic front desk.
