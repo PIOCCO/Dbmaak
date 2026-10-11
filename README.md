@@ -170,7 +170,7 @@ More detail: [`docs/TELEPHONY.md`](docs/TELEPHONY.md).
 pytest -q
 ```
 
-**35 passed**, 1 skipped (optional LiveKit credential smoke). Coverage includes tenant-scoped repositories, idempotent booking retries, startup validation, session finalization, routing, handoff policy, and cross-business isolation.
+**48 passed**, 1 skipped (optional LiveKit/Azure credential smoke). Coverage includes Azure voice config, tenant-scoped repositories, idempotent booking retries, startup validation, session finalization, routing, handoff policy, and cross-business isolation.
 
 ## Architecture hardening (pre-PSTN)
 
