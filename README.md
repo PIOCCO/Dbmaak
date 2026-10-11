@@ -166,7 +166,15 @@ More detail: [`docs/TELEPHONY.md`](docs/TELEPHONY.md).
 pytest -q
 ```
 
-**26 tests** cover routing, ambiguous numbers, SIP attribute parsing, async inbound routing, handoff policy, mock booking labels, isolation, and guards. One optional integration test is skipped unless `RUN_LIVEKIT_INTEGRATION=true`.
+**35 passed**, 1 skipped (optional LiveKit credential smoke). Coverage includes tenant-scoped repositories, idempotent booking retries, startup validation, session finalization, routing, handoff policy, and cross-business isolation.
+
+## Architecture hardening (pre-PSTN)
+
+- `TenantContext` + `TenantScopedBookingRepository` enforce tenant boundaries at persistence/tool layers.
+- Durable booking idempotency via `(business_id, idempotency_key)` with payload mismatch detection.
+- Bookings persisted with `provider_kind=mock`; tool responses labeled accordingly.
+- `CallSessionFinalizer` + idempotent `CallSessionRepository.end`.
+- `config/startup.py` validates profiles and worker credentials on `dev` / `start`.
 
 ---
 
@@ -221,4 +229,6 @@ python agent/main.py start
 RUN_LIVEKIT_INTEGRATION=true pytest -m integration -q
 ```
 
-Then place a **real call** to your Twilio number and complete the acceptance checklist above.
+Then place a **real call** to your Twilio number and complete [`docs/INBOUND_CALL_CHECKLIST.md`](docs/INBOUND_CALL_CHECKLIST.md).
+
+**Database:** use `alembic upgrade head` for existing deployments; `init_db()` only creates tables on empty DBs and does not apply incremental migrations.
