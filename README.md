@@ -60,7 +60,7 @@ python agent/main.py dev
 
 Console uses `DEFAULT_BUSINESS_ID` (default `demo_salon`).
 
-**Console UX:** In **audio** mode you speak into the mic (no typing). The moving level meter is LiveKit’s Rich UI, not a bug. Logs go to **stderr** in console to reduce overlap; set `LOG_LEVEL=DEBUG` if you need verbose traces. **Text** mode (Ctrl+T) uses a custom prompt where characters may not echo like a normal shell. Prefer **`lk agent console`** long term (Python `console` is deprecated).
+**Console UX:** See [`docs/CONSOLE.md`](docs/CONSOLE.md). If the session **closes alone after ~1s**, use a real terminal (not IDE Run), check mic with `--list-devices`, and prefer **`lk agent console`** over deprecated `python3 agent/main.py console`.
 
 ---
 

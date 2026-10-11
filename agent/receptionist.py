@@ -170,11 +170,15 @@ async def start_receptionist_session(ctx: JobContext) -> None:
     def _on_close(_: object) -> None:
         finalizer.finalize("completed")
 
+    room_input = RoomInputOptions(
+        # Console uses a mock room; avoid closing the session if the mock participant drops.
+        close_on_disconnect=not routing.console_mode,
+    )
     try:
         await session.start(
             agent=agent,
             room=ctx.room,
-            room_input_options=RoomInputOptions(close_on_disconnect=True),
+            room_input_options=room_input,
             room_output_options=RoomOutputOptions(transcription_enabled=True),
         )
     except Exception as exc:
