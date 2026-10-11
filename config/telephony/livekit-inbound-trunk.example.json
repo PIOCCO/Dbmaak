@@ -1,0 +1,6 @@
+{
+  "trunk": {
+    "name": "twilio-inbound-demo",
+    "numbers": ["+1XXXXXXXXXX"]
+  }
+}

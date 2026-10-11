@@ -9,6 +9,8 @@ from providers.booking.base import BookingProvider
 from security.authorization import ToolAuthorizationError, ToolName, authorize_tool
 from security.guards import CallToolGuard, IdempotencyStore
 from security.validation import parse_iso_datetime
+from business.handoff_config import resolve_handoff_destination
+from config.settings import get_settings
 from tools.schemas import (
     BusinessInfoRequest,
     CheckAvailabilityRequest,
@@ -16,6 +18,11 @@ from tools.schemas import (
     HumanHandoffRequest,
     LookupServiceRequest,
     OpeningHoursRequest,
+)
+
+
+MOCK_BOOKING_NOTICE = (
+    "[MOCK BOOKING — not a live reservation; for demonstration and testing only]"
 )
 
 
@@ -111,8 +118,11 @@ class ReceptionistActions:
         if slot.available:
             return ActionResult(
                 ok=True,
-                message=f"The requested time appears available on {starts_at.isoformat()}.",
-                data={"available": True},
+                message=(
+                    f"[MOCK AVAILABILITY CHECK] The requested time appears available on "
+                    f"{starts_at.isoformat()}. Confirm with the caller before booking."
+                ),
+                data={"available": True, "mock": True},
             )
         return ActionResult(
             ok=False,
@@ -149,12 +159,13 @@ class ReceptionistActions:
             return ActionResult(ok=False, message=result.message)
         return ActionResult(
             ok=True,
-            message=result.message,
+            message=f"{MOCK_BOOKING_NOTICE} {result.message}",
             data={
                 "booking_id": result.booking_id,
                 "starts_at": result.confirmed_starts_at.isoformat()
                 if result.confirmed_starts_at
                 else None,
+                "mock": True,
             },
         )
 
@@ -163,6 +174,15 @@ class ReceptionistActions:
             self._run_tool(ToolName.REQUEST_HUMAN_HANDOFF)
         except ToolAuthorizationError as exc:
             return ActionResult(ok=False, message=str(exc))
+
+        _destination, enabled = resolve_handoff_destination(
+            settings=get_settings(), profile=self._profile
+        )
+        if not enabled:
+            return ActionResult(
+                ok=False,
+                message="Human handoff is not available for this line.",
+            )
         return ActionResult(
             ok=True,
             message=self._profile.escalation.human_handoff_message,

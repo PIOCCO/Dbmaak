@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import uuid
-
+from livekit import rtc
 from livekit.agents import Agent, AgentSession, JobContext, RoomInputOptions, RoomOutputOptions
+
 from agent.context import SessionContext
+from agent.inbound import resolve_inbound_routing
 from agent.prompts import build_system_instructions
-from agent.routing import resolve_business_id
+from agent.routing import BusinessRoutingError
 from business.registry import BusinessRegistry
 from config.settings import Settings, get_settings
 from observability.logging import bind_call_context, get_logger
+from observability.metrics import get_metrics
 from persistence.db import get_session_factory, init_db
 from persistence.repositories import CallSessionRepository
 from providers.booking.mock import MockBookingProvider
-from providers.telephony.livekit_sip import LiveKitSipRoutingAdapter
 from providers.voice.openai_realtime import OpenAIRealtimeVoiceFactory
 from security.guards import CallToolGuard, IdempotencyStore
 from tools.actions import ReceptionistActions
@@ -42,6 +43,7 @@ def build_session_context(
     call_id: str,
     handoff_destination: str,
     caller_number_redacted: str = "",
+    handoff_enabled: bool = True,
 ) -> SessionContext:
     profile = registry.get(business_id)
     booking = MockBookingProvider(profile)
@@ -56,7 +58,7 @@ def build_session_context(
         business_id=business_id,
         profile=profile,
         actions=actions,
-        handoff_destination=handoff_destination,
+        handoff_destination=handoff_destination if handoff_enabled else "",
         caller_number_redacted=caller_number_redacted,
     )
 
@@ -65,48 +67,66 @@ async def start_receptionist_session(ctx: JobContext) -> None:
     settings = get_settings()
     registry = BusinessRegistry.from_directory(settings.business_config_dir)
     init_db()
+    metrics = get_metrics()
 
-    telephony = LiveKitSipRoutingAdapter()
-    participant_attrs: dict[str, str] | None = None
-    for participant in ctx.room.remote_participants.values():
-        participant_attrs = dict(participant.attributes)
-        break
+    try:
+        routing = await resolve_inbound_routing(ctx, settings=settings, registry=registry)
+    except BusinessRoutingError as exc:
+        metrics.increment("session_aborted", reason="routing_failed")
+        logger.error("session_aborted", reason="routing_failed", detail=str(exc))
+        with get_session_factory()() as db_session:
+            CallSessionRepository(db_session).start(
+                call_id="unrouted",
+                business_id="unknown",
+                room_name=ctx.room.name,
+                metadata={"error": str(exc)},
+            )
+            CallSessionRepository(db_session).end("unrouted", status="routing_failed")
+        ctx.shutdown(reason=f"routing_failed: {exc}")
+        return
 
-    inbound = telephony.extract_inbound_context(
-        room_name=ctx.room.name,
-        job_metadata=getattr(ctx.job, "metadata", "") or "",
-        participant_attributes=participant_attrs,
+    from business.handoff_config import resolve_handoff_destination
+
+    handoff_destination, handoff_enabled = resolve_handoff_destination(
+        settings=settings, profile=registry.get(routing.business_id)
     )
-    console_mode = not participant_attrs and not inbound.called_number
-    business_id = resolve_business_id(
-        settings=settings,
-        registry=registry,
-        inbound=inbound,
-        console_mode=console_mode,
-    )
-
-    call_id = inbound.dispatch_metadata.get("call_id") or str(uuid.uuid4())
-    caller_redacted = _redact_phone(inbound.caller_number or "")
 
     session_ctx = build_session_context(
         settings=settings,
         registry=registry,
-        business_id=business_id,
-        call_id=call_id,
-        handoff_destination=settings.human_handoff_destination,
-        caller_number_redacted=caller_redacted,
+        business_id=routing.business_id,
+        call_id=routing.call_id,
+        handoff_destination=handoff_destination,
+        caller_number_redacted=routing.caller_number_redacted,
+        handoff_enabled=handoff_enabled,
     )
 
-    bind_call_context(call_id=call_id, business_id=business_id, room=ctx.room.name)
-    logger.info("session_start", business_id=business_id, console_mode=console_mode)
+    bind_call_context(
+        call_id=routing.call_id,
+        business_id=routing.business_id,
+        room=ctx.room.name,
+    )
+    metrics.increment("session_started", business_id=routing.business_id)
+    metrics.record_event(
+        "call_lifecycle",
+        phase="started",
+        business_id=routing.business_id,
+        call_id=routing.call_id,
+        console_mode=routing.console_mode,
+    )
+    logger.info(
+        "session_start",
+        business_id=routing.business_id,
+        console_mode=routing.console_mode,
+    )
 
     with get_session_factory()() as db_session:
         CallSessionRepository(db_session).start(
-            call_id=call_id,
-            business_id=business_id,
+            call_id=routing.call_id,
+            business_id=routing.business_id,
             room_name=ctx.room.name,
-            caller_number_redacted=caller_redacted,
-            metadata={"routing": inbound.dispatch_metadata},
+            caller_number_redacted=routing.caller_number_redacted,
+            metadata={"routing": routing.inbound.dispatch_metadata},
         )
 
     voice_factory = OpenAIRealtimeVoiceFactory(settings)
@@ -120,21 +140,44 @@ async def start_receptionist_session(ctx: JobContext) -> None:
         tools=tools,
     )
 
-    await session.start(
-        agent=agent,
-        room=ctx.room,
-        room_input_options=RoomInputOptions(close_on_disconnect=True),
-        room_output_options=RoomOutputOptions(transcription_enabled=True),
-    )
+    @ctx.room.on("participant_disconnected")
+    def _on_participant_disconnected(participant: rtc.RemoteParticipant) -> None:
+        if participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP:
+            metrics.increment("caller_disconnected", business_id=routing.business_id)
+            metrics.record_event(
+                "call_lifecycle",
+                phase="caller_disconnected",
+                business_id=routing.business_id,
+                call_id=routing.call_id,
+            )
+            logger.info("caller_disconnected", business_id=routing.business_id)
 
     @session.on("close")
     def _on_close(_: object) -> None:
+        metrics.increment("session_ended", business_id=routing.business_id)
+        metrics.record_event(
+            "call_lifecycle",
+            phase="ended",
+            business_id=routing.business_id,
+            call_id=routing.call_id,
+        )
         with get_session_factory()() as db_session:
-            CallSessionRepository(db_session).end(call_id)
+            CallSessionRepository(db_session).end(routing.call_id)
 
-
-def _redact_phone(value: str) -> str:
-    digits = "".join(ch for ch in value if ch.isdigit())
-    if len(digits) <= 4:
-        return ""
-    return f"***{digits[-4:]}"
+    try:
+        await session.start(
+            agent=agent,
+            room=ctx.room,
+            room_input_options=RoomInputOptions(close_on_disconnect=True),
+            room_output_options=RoomOutputOptions(transcription_enabled=True),
+        )
+    except Exception as exc:
+        metrics.increment("session_failed", business_id=routing.business_id)
+        logger.error(
+            "session_failed",
+            business_id=routing.business_id,
+            error_type=type(exc).__name__,
+        )
+        with get_session_factory()() as db_session:
+            CallSessionRepository(db_session).end(routing.call_id, status="failed")
+        raise

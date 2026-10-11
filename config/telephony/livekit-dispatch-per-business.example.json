@@ -1,0 +1,17 @@
+{
+  "dispatch_rule": {
+    "name": "demo-salon-inbound",
+    "rule": {
+      "dispatchRuleIndividual": {
+        "roomPrefix": "biz-demo_salon-"
+      }
+    },
+    "roomConfig": {
+      "agents": [
+        {
+          "agentName": "voice-receptionist"
+        }
+      ]
+    }
+  }
+}

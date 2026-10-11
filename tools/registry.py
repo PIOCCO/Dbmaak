@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from livekit.agents import RunContext, function_tool
 
 from agent.context import SessionContext
+from agent.handoff import HandoffNotAllowedError, transfer_caller_to_human
 from tools import actions
 from tools.schemas import (
     BusinessInfoRequest,
@@ -74,10 +75,21 @@ def build_livekit_tools(services: ToolServices) -> list:
 
     @function_tool(name="request_human_handoff")
     async def request_human_handoff(ctx: RunContext[SessionContext], reason: str) -> str:
+        from livekit.agents import get_job_context
+
         result = svc.request_human_handoff(HumanHandoffRequest(reason=reason))
-        if result.ok:
-            await _maybe_transfer(ctx)
-        return result.message
+        if not result.ok:
+            return result.message
+        try:
+            job_ctx = get_job_context()
+            transferred, detail = await transfer_caller_to_human(
+                job_ctx, ctx.userdata, reason=reason
+            )
+        except HandoffNotAllowedError as exc:
+            return str(exc)
+        if transferred:
+            return f"{result.message} {detail}".strip()
+        return f"{result.message} {detail}".strip()
 
     return [
         get_business_info,
@@ -87,21 +99,3 @@ def build_livekit_tools(services: ToolServices) -> list:
         create_booking,
         request_human_handoff,
     ]
-
-
-async def _maybe_transfer(ctx: RunContext[SessionContext]) -> None:
-    from livekit.agents import get_job_context
-
-    destination = ctx.userdata.handoff_destination
-    if not destination:
-        return
-    job_ctx = get_job_context()
-    # Transfer only works for SIP sessions (not local console).
-    for participant in job_ctx.room.remote_participants.values():
-        try:
-            job_ctx.transfer_sip_participant(
-                participant=participant,
-                transfer_to=destination,
-            )
-        except Exception:
-            continue

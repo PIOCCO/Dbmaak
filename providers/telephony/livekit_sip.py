@@ -25,10 +25,17 @@ class LiveKitSipRoutingAdapter:
                 metadata = {"raw_job_metadata": job_metadata}
 
         attrs = participant_attributes or {}
-        called = attrs.get("sip.trunkPhoneNumber") or attrs.get("sip.to") or metadata.get(
-            "called_number"
+        # Attribute names follow LiveKit SIP participant attributes (see telephony testing checklist).
+        called = (
+            attrs.get("sip.trunkPhoneNumber")
+            or attrs.get("sip.trunkNumber")
+            or attrs.get("sip.to")
+            or attrs.get("sip.calledNumber")
+            or metadata.get("called_number")
         )
-        caller = attrs.get("sip.phoneNumber") or metadata.get("caller_number")
+        caller = attrs.get("sip.phoneNumber") or attrs.get("sip.from") or metadata.get(
+            "caller_number"
+        )
         return InboundCallContext(
             room_name=room_name,
             called_number=str(called) if called else None,

@@ -30,12 +30,19 @@ def resolve_business_id(
         if mapped:
             _assert_known(registry, mapped)
             return mapped
-        for profile in registry.list_ids():
-            p = registry.get(profile)
-            if _normalize_e164(inbound.called_number) in {
-                _normalize_e164(n) for n in p.inbound_phone_numbers
-            }:
-                return p.id
+        called = _normalize_e164(inbound.called_number)
+        matches = [
+            profile_id
+            for profile_id in registry.list_ids()
+            if called
+            in {_normalize_e164(n) for n in registry.get(profile_id).inbound_phone_numbers}
+        ]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise BusinessRoutingError(
+                f"Ambiguous phone number mapping for {called}: {matches}"
+            )
 
     room_match = _BUSINESS_ROOM_RE.match(inbound.room_name) if inbound else None
     if room_match:

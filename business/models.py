@@ -63,6 +63,11 @@ class ContactDetails(BaseModel):
 class EscalationRules(BaseModel):
     offer_human_after_failed_tool_attempts: int = Field(default=2, ge=0, le=10)
     offer_human_on_low_confidence: bool = True
+    handoff_enabled: bool = True
+    handoff_destination: str = Field(
+        default="",
+        description="Optional per-business SIP transfer target; falls back to HUMAN_HANDOFF_DESTINATION env.",
+    )
     human_handoff_message: str = (
         "I'll connect you with a team member who can help further."
     )

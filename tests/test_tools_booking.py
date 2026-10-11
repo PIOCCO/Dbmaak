@@ -75,6 +75,7 @@ def test_duplicate_idempotency_rejected() -> None:
     first = actions.create_booking(req)
     second = actions.create_booking(req)
     assert first.ok is True
+    assert "MOCK BOOKING" in first.message
     assert second.ok is False
 
 
