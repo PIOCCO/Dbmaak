@@ -3,7 +3,11 @@ from __future__ import annotations
 import os
 import sys
 
+from dotenv import load_dotenv
 from livekit.agents import AgentServer, JobContext, cli
+
+# LiveKit worker reads LIVEKIT_* from os.environ; load .env from repo root first.
+load_dotenv()
 
 from agent.receptionist import start_receptionist_session
 from config.settings import get_settings
