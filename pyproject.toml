@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-voice-receptionist"
+version = "0.1.0"
+description = "Production-oriented modular AI voice receptionist engine"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "livekit-agents[openai]>=1.8.6",
+  "livekit-plugins-openai>=1.8.6",
+  "azure-identity>=1.19",
+  "pydantic>=2.14",
+  "pydantic-settings>=2.15",
+  "pyyaml>=6.0",
+  "sqlalchemy>=2.0",
+  "alembic>=1.20",
+  "psycopg[binary]>=3.3",
+  "structlog>=26.0",
+  "opentelemetry-api>=1.44",
+  "opentelemetry-sdk>=1.44",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.0",
+  "pytest-asyncio>=1.0",
+  "httpx>=0.28",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+  "agent",
+  "business",
+  "config",
+  "knowledge",
+  "observability",
+  "persistence",
+  "providers",
+  "security",
+  "tools",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+  "integration: optional tests requiring live provider credentials",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

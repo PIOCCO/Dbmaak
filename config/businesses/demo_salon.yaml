@@ -1,0 +1,73 @@
+id: demo_salon
+display_name: Lumen Hair Studio
+description: A boutique hair salon specializing in cuts, color, and styling.
+timezone: America/New_York
+agent_style:
+  language: en
+  tone: warm, concise, professional
+  disclose_ai: true
+contact:
+  phone: "+1-555-0100"
+  email: hello@lumenhair.example
+  address: 42 Market Street, Springfield
+  website: https://lumenhair.example
+inbound_phone_numbers:
+  - "+15550100"
+opening_hours:
+  - weekday: tuesday
+    ranges:
+      - open: "09:00"
+        close: "18:00"
+  - weekday: wednesday
+    ranges:
+      - open: "09:00"
+        close: "18:00"
+  - weekday: thursday
+    ranges:
+      - open: "09:00"
+        close: "20:00"
+  - weekday: friday
+    ranges:
+      - open: "09:00"
+        close: "18:00"
+  - weekday: saturday
+    ranges:
+      - open: "10:00"
+        close: "16:00"
+holidays:
+  - date: "2026-12-25"
+    reason: Christmas Day
+services:
+  - id: womens_cut
+    name: Women's haircut
+    description: Shampoo, cut, and blow-dry.
+    duration_minutes: 60
+    price_amount: 75
+    price_currency: USD
+    bookable: true
+  - id: mens_cut
+    name: Men's haircut
+    description: Clipper or scissor cut with finish.
+    duration_minutes: 45
+    price_amount: 45
+    price_currency: USD
+    bookable: true
+  - id: color
+    name: Single-process color
+    description: Root-to-tip color application.
+    duration_minutes: 120
+    price_amount: 140
+    price_currency: USD
+    bookable: true
+faqs:
+  - question: Do you walk in without an appointment?
+    answer: We accept walk-ins when availability allows, but booking is recommended.
+  - question: What is your cancellation policy?
+    answer: Please cancel at least 24 hours in advance to avoid a fee.
+policies:
+  - Late arrivals may receive a shortened service to stay on schedule.
+  - Color services require a patch test for new clients.
+escalation:
+  offer_human_after_failed_tool_attempts: 2
+  offer_human_on_low_confidence: true
+  human_handoff_message: I'll connect you with our front desk team.

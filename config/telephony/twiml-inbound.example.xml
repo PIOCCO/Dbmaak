@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Twilio TwiML Bin for inbound calls → LiveKit SIP (Programmable Voice path).
+  Docs: https://docs.livekit.io/telephony/accepting-calls/inbound-twilio/
+
+  Replace placeholders:
+  - <sip_trunk_username> / <sip_trunk_password> — must match LiveKit inbound trunk auth
+  - <your_phone_number> — E.164 number on the trunk (e.g. +14155550100)
+  - <your_sip_endpoint> — LiveKit SIP host without sip: prefix (Project → Telephony → SIP URI)
+-->
+<Response>
+  <Dial>
+    <Sip username="<sip_trunk_username>" password="<sip_trunk_password>">
+      sip:<your_phone_number>@<your_sip_endpoint>;transport=tcp
+    </Sip>
+  </Dial>
+</Response>
