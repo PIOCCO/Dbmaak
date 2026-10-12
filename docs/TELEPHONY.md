@@ -4,6 +4,8 @@ This document matches the **current LiveKit Telephony docs** (Twilio Voice + inb
 
 **No real PSTN call is validated in CI.** Use the acceptance checklist in `README.md` after you configure credentials.
 
+> **Moroccan business numbers (`+212` / `05xx`):** Twilio does not offer voice-enabled Moroccan DIDs. For operators, integrators, forwarding, ANRT rules, costs, and a first PSTN test plan, see [`MOROCCO_TELEPHONY.md`](MOROCCO_TELEPHONY.md).
+
 ## Prerequisites
 
 | Item | Purpose |

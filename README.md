@@ -21,7 +21,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries, tenant
 | `security/` | Tool authorization, validation, rate limits, idempotency |
 | `observability/` | Structured lifecycle logs and in-process call metrics |
 | `config/` | Settings, business YAML, telephony templates (`config/telephony/`) |
-| `docs/` | Detailed Twilio ↔ LiveKit setup (`docs/TELEPHONY.md`) |
+| `docs/` | Telephony: Twilio ↔ LiveKit (`docs/TELEPHONY.md`); Morocco PSTN (`docs/MOROCCO_TELEPHONY.md`) |
 | `tests/` | Unit/async tests (mocked providers; no PSTN in CI) |
 
 ### Tenant routing (trusted server-side only)
